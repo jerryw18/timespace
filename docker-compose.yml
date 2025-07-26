@@ -12,18 +12,18 @@ services:
     environment:
       - VITE_API_URL=http://localhost:8000
     depends_on:
-      - agent
+      - backend
     networks:
       - timespace_net
 
-  agent:
-    container_name: timespace_agent
+  backend:
+    container_name: timespace_backend
     build:
-      context: ./agent
+      context: ./backend
       dockerfile: Dockerfile
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ./agent:/app
+      - ./backend:/app
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:
