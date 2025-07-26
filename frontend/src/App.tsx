@@ -26,6 +26,14 @@ function App() {
     description: string;
     category?: string;
   }>>([]);
+  const [isDrillingDown, setIsDrillingDown] = useState(false);
+  const [timelineStack, setTimelineStack] = useState<Array<{
+    events: typeof timelineEvents;
+    currentEvents: typeof currentEvents;
+    selectedYear: number | null;
+    title: string;
+  }>>([]);
+  const [currentTimelineTitle, setCurrentTimelineTitle] = useState<string>("");
 
   const handleLocationSearch = async (query: string) => {
     if (!query.trim()) {
@@ -74,6 +82,53 @@ function App() {
   const fetchLocationEvents = async (locationName: string) => {
     setIsLoading(true);
     setApiError(null);
+    
+    // Use hardcoded data for Seattle initial load
+    if (locationName.toLowerCase() === 'seattle') {
+      try {
+        const seattleEvents = [
+          {
+            date: "1851",
+            title: "Founding of Seattle",
+            description: "The Denny Party lands at Alki Point, marking the establishment of Seattle by white settlers."
+          },
+          {
+            date: "1889",
+            title: "Great Seattle Fire",
+            description: "A catastrophic fire destroys much of downtown Seattle, leading to a major rebuilding effort."
+          },
+          {
+            date: "1962",
+            title: "Century 21 Exposition (World's Fair)",
+            description: "The Seattle World's Fair opens, introducing the Space Needle and establishing Seattle as a modern city."
+          },
+          {
+            date: "1999",
+            title: "WTO Protests",
+            description: "Massive protests against the World Trade Organization meeting bring global attention to Seattle and the anti-globalization movement."
+          }
+        ];
+        
+        // Extract years from events to create timeline
+        const events = seattleEvents.map(event => {
+          const year = parseInt(event.date);
+          return { year: isNaN(year) ? new Date(event.date).getFullYear() : year };
+        });
+        
+        setTimelineEvents(events);
+        setCurrentEvents(seattleEvents);
+        
+        if (events.length > 0) {
+          setSelectedYear(events[0].year);
+        }
+        setIsLoading(false);
+        return;
+      } catch (error) {
+        console.error('Error setting Seattle data:', error);
+      }
+    }
+    
+    // For other cities, try the API
     try {
       const response = await apiService.getLocationEvents(locationName);
       
@@ -112,16 +167,65 @@ function App() {
 
   const handleYearSelect = async (year: number) => {
     setSelectedYear(year);
-    
-    // Find the event for this year
+  };
+
+  const handleDrillDown = async () => {
+    if (!selectedYear) return;
+
     const eventForYear = currentEvents.find(event => {
       const eventYear = parseInt(event.date) || new Date(event.date).getFullYear();
-      return eventYear === year;
+      return eventYear === selectedYear;
     });
+
+    if (!eventForYear) return;
+
+    setIsDrillingDown(true);
     
-    if (eventForYear) {
-      // Could fetch drilldown data here if needed
-      // await apiService.getEventDrilldown(currentLocation.name, eventForYear.date, eventForYear.title);
+    try {
+      // Save current timeline state to stack
+      setTimelineStack(prev => [...prev, {
+        events: timelineEvents,
+        currentEvents: currentEvents,
+        selectedYear: selectedYear,
+        title: currentTimelineTitle || currentLocation.name
+      }]);
+
+      // Call drill-down API
+      const response = await apiService.getEventDrilldown(
+        currentLocation.name,
+        eventForYear.date,
+        eventForYear.title
+      );
+
+      // Extract years from drill-down events
+      const drillDownEvents = response.events.map(event => {
+        const year = parseInt(event.date) || new Date(event.date).getFullYear();
+        return { year };
+      });
+
+      // Update timeline with drill-down data
+      setTimelineEvents(drillDownEvents);
+      setCurrentEvents(response.events);
+      setCurrentTimelineTitle(eventForYear.title);
+      setSelectedYear(drillDownEvents.length > 0 ? drillDownEvents[0].year : null);
+      setApiError(null);
+      
+    } catch (error: any) {
+      console.error('Failed to fetch drill-down data:', error);
+      setApiError('Failed to load detailed timeline. Please try again.');
+    } finally {
+      setIsDrillingDown(false);
+    }
+  };
+
+  const handleBackToParentTimeline = () => {
+    const lastTimeline = timelineStack[timelineStack.length - 1];
+    if (lastTimeline) {
+      setTimelineEvents(lastTimeline.events);
+      setCurrentEvents(lastTimeline.currentEvents);
+      setSelectedYear(lastTimeline.selectedYear);
+      setCurrentTimelineTitle(lastTimeline.title);
+      setTimelineStack(prev => prev.slice(0, -1));
     }
   };
 
@@ -162,6 +266,9 @@ function App() {
                   (parseInt(e.date) || new Date(e.date).getFullYear()) === selectedYear
                 )?.description || "No description available" }
               ]}
+              onDrillDown={handleDrillDown}
+              canDrillDown={true}
+              isLoading={isDrillingDown}
             />
           </div>
         )}
@@ -174,6 +281,9 @@ function App() {
         isLoading={isLoading}
         apiError={apiError}
         currentLocation={currentLocation.name}
+        onBack={handleBackToParentTimeline}
+        canGoBack={timelineStack.length > 0}
+        timelineTitle={currentTimelineTitle}
       />
     </div>
   );

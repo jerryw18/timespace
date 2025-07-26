@@ -62,7 +62,7 @@ export default function LocationSearch({
   return (
     <div className="absolute top-6 left-6 z-20" ref={dropdownRef}>
       <form onSubmit={handleSubmit} className="relative">
-        <div className="flex items-center bg-gray-800 bg-opacity-80 backdrop-blur-sm rounded-lg px-4 py-3 min-w-80">
+        <div className="flex items-center bg-gray-800 bg-opacity-80 backdrop-blur-sm rounded-lg px-4 py-3 min-w-80 border border-gray-600">
           <svg
             className="w-5 h-5 text-gray-400 mr-3"
             fill="none"
