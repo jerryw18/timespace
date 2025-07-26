@@ -73,10 +73,10 @@ export default function Map({ currentLocation, isLoading }: MapProps) {
     el.className = "cursor-pointer group relative";
     el.innerHTML = `
       <div class="flex flex-col items-center">
-        <div class="w-6 h-6 rounded-full transition-all duration-300 bg-cyan-400 scale-125 relative">
-          <div class="absolute inset-0 bg-cyan-400 rounded-full animate-ping opacity-75"></div>
+        <div class="w-6 h-6 rounded-full transition-all duration-300 bg-accent-400 scale-125 relative">
+          <div class="absolute inset-0 bg-accent-400 rounded-full animate-ping opacity-75"></div>
         </div>
-        <span class="mt-2 text-sm font-medium transition-all duration-300 text-cyan-400 scale-110 whitespace-nowrap">
+        <span class="mt-2 text-sm font-medium transition-all duration-300 text-accent-400 scale-110 whitespace-nowrap">
           ${currentLocation.name}
         </span>
       </div>

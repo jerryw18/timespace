@@ -13,13 +13,13 @@ interface EventCardProps {
 
 export default function EventCard({ title, details, onClose, onDrillDown, canDrillDown = true, isLoading = false }: EventCardProps) {
   return (
-    <div className="bg-gray-800 bg-opacity-95 backdrop-blur-sm text-white rounded-lg p-6 max-w-md shadow-2xl border border-gray-700">
+    <div className="bg-neutral-900 bg-opacity-95 backdrop-blur-sm text-white rounded-lg p-6 max-w-md shadow-2xl border border-neutral-600">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-xl font-bold text-white">{title}</h3>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors ml-4"
+            className="text-neutral-400 hover:text-white transition-colors ml-4"
           >
             <svg
               className="w-5 h-5"
@@ -41,8 +41,8 @@ export default function EventCard({ title, details, onClose, onDrillDown, canDri
       <ul className="space-y-3 mb-4">
         {details.map((detail, index) => (
           <li key={index} className="flex items-start">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full mt-2 mr-3 flex-shrink-0" />
-            <span className="text-gray-200 leading-relaxed">{detail.text}</span>
+            <div className="w-2 h-2 bg-accent-400 rounded-full mt-2 mr-3 flex-shrink-0" />
+            <span className="text-neutral-100 leading-relaxed">{detail.text}</span>
           </li>
         ))}
       </ul>
@@ -52,7 +52,7 @@ export default function EventCard({ title, details, onClose, onDrillDown, canDri
           <button
             onClick={onDrillDown}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg transition-colors duration-200 text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-accent-500 hover:bg-accent-600 disabled:bg-neutral-600 disabled:cursor-not-allowed rounded-lg transition-colors duration-200 text-sm font-medium"
           >
             {isLoading ? (
               <>

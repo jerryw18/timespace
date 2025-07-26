@@ -235,7 +235,7 @@ function App() {
   }, []);
 
   return (
-    <div className="h-screen bg-gray-900 text-white overflow-hidden flex flex-col">
+    <div className="h-screen bg-neutral-900 text-white overflow-hidden flex flex-col">
       <Header />
 
       <div className="flex-1 relative">
@@ -271,6 +271,7 @@ function App() {
               onDrillDown={handleDrillDown}
               canDrillDown={true}
               isLoading={isDrillingDown}
+              onClose={() => setSelectedYear(null)}
             />
           </div>
         )}

@@ -134,7 +134,7 @@ export default function Timeline({
         <div className="mb-4 flex items-center">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors duration-200 text-sm"
+            className="flex items-center gap-2 px-3 py-2 bg-neutral-700 hover:bg-neutral-600 rounded-lg transition-colors duration-200 text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -146,42 +146,76 @@ export default function Timeline({
 
       {/* Show timeline if we have events and no error */}
       {events.length > 0 && !apiError && !isLoading && (
-        <div className="relative" ref={timelineRef}>
-          <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-600 transform -translate-y-1/2" />
+        <div className="relative px-8" ref={timelineRef}>
+          {/* Main timeline line */}
+          <div className="absolute top-1/2 left-8 right-8 h-0.5 bg-neutral-600 transform -translate-y-1/2" />
 
-          <div className="flex justify-between items-center relative">
-            {events.map((event, index) => (
+          {/* Tick marks */}
+          <div className="absolute top-1/2 left-8 right-8 transform -translate-y-1/2">
+            {Array.from({ length: 5 }, (_, i) => (
               <div
-                key={`${event.year}-${index}`}
-                ref={(el) => {
-                  if (el) dotsRef.current[index] = el;
-                }}
-                className="flex flex-col items-center cursor-pointer group"
-                onClick={() => onYearSelect?.(event.year)}
-              >
-                <div
-                  className={`dot-inner w-4 h-4 rounded-full transition-all duration-300 relative z-10 ${
-                    event.year === selectedYear || event.isActive
-                      ? "bg-cyan-400"
-                      : "bg-white hover:bg-cyan-300"
-                  }`}
-                >
-                  {(event.year === selectedYear || event.isActive) && (
-                    <div className="absolute inset-0 bg-cyan-400 rounded-full animate-ping opacity-75" />
-                  )}
-                </div>
-
-                <span
-                  className={`dot-label mt-3 text-sm font-medium transition-all duration-300 ${
-                    event.year === selectedYear || event.isActive
-                      ? "text-cyan-400"
-                      : "text-white group-hover:text-cyan-300"
-                  }`}
-                >
-                  {event.year}
-                </span>
-              </div>
+                key={i}
+                className="absolute w-0.5 h-2 bg-neutral-500 transform -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${i * 25}%` }}
+              />
             ))}
+          </div>
+
+          <div className="relative" style={{ height: '80px' }}>
+            {events.map((event, index) => {
+              const minYear = Math.min(...events.map(e => e.year));
+              const maxYear = Math.max(...events.map(e => e.year));
+              const yearRange = maxYear - minYear || 1;
+              const position = yearRange === 0 ? 50 : ((event.year - minYear) / yearRange) * 100;
+              
+              return (
+                <div
+                  key={`${event.year}-${index}`}
+                  ref={(el) => {
+                    if (el) dotsRef.current[index] = el;
+                  }}
+                  className="absolute cursor-pointer group"
+                  style={{ 
+                    left: `${position}%`,
+                    transform: 'translateX(-50%)'
+                  }}
+                  onClick={() => onYearSelect?.(event.year)}
+                >
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`dot-inner w-5 h-5 rounded-full transition-all duration-300 relative z-10 ${
+                        event.year === selectedYear || event.isActive
+                          ? "bg-cyan-400"
+                          : "bg-white hover:bg-cyan-300"
+                      }`}
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)'
+                      }}
+                    >
+                      {(event.year === selectedYear || event.isActive) && (
+                        <div className="absolute inset-0 bg-cyan-400 rounded-full animate-ping opacity-75" />
+                      )}
+                    </div>
+
+                    <span
+                      className={`dot-label text-sm font-semibold transition-all duration-300 whitespace-nowrap ${
+                        event.year === selectedYear || event.isActive
+                          ? "text-cyan-400"
+                          : "text-white group-hover:text-cyan-300"
+                      }`}
+                      style={{
+                        marginTop: '35px'
+                      }}
+                    >
+                      {event.year}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
