@@ -14,7 +14,7 @@ interface MapProps {
 }
 
 // Set Mapbox access token from environment variable
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || "";
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
 
 export default function Map({ currentLocation, isLoading }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);

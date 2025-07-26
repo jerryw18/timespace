@@ -8,9 +8,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"           # Vite / Static site port
+      - "5173:80"           # Vite / Static site port
     environment:
       - VITE_API_URL=http://localhost:8000
+      - VITE_MAPBOX_ACCESS_TOKEN=${VITE_MAPBOX_ACCESS_TOKEN}
     depends_on:
       - backend
     networks:

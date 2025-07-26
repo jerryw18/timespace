@@ -71,7 +71,7 @@ class ApiService {
 
   async searchLocation(query: string): Promise<LocationSearchResult[]> {
     try {
-      const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+      const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
       if (!mapboxToken) {
         console.error('Mapbox access token not found');
         return [];
