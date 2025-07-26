@@ -256,7 +256,9 @@ function App() {
         />
 
         {selectedYear && currentEvents.length > 0 && (
-          <div className="absolute left-8 bottom-32 z-30">
+          <div className={`absolute left-8 z-30 ${
+            timelineStack.length > 0 ? 'bottom-48' : 'bottom-32'
+          }`}>
             <EventCard
               title={currentEvents.find(e => 
                 (parseInt(e.date) || new Date(e.date).getFullYear()) === selectedYear
