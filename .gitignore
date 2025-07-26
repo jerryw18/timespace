@@ -1,0 +1,74 @@
+#-------------------------------------------------------
+# Global
+#-------------------------------------------------------
+# OS / Editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Environment files & secrets
+.env
+.env.*
+
+#-------------------------------------------------------
+# Python backend (FastAPI / Flask / Django / etc.)
+#-------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+*.pyd
+*.egg-info/
+.eggs/
+build/
+dist/
+# Virtual-envs
+.venv/
+venv/
+# Test & coverage artifacts
+.coverage
+htmlcov/
+.tox/
+.pytest_cache/
+
+#-------------------------------------------------------
+# Node / TypeScript frontend
+#-------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+# Production / preview builds
+dist/
+build/
+.next/
+out/
+
+#-------------------------------------------------------
+# Docker
+#-------------------------------------------------------
+# Ignore local docker volumes & layered caches
+**/.docker/
+docker-data/
+# Optional: uncomment if you mount these locally
+# postgres-data/
+# redis-data/
+
+#-------------------------------------------------------
+# Database & generated data
+#-------------------------------------------------------
+*.sqlite3
+*.db
+*.log
+*.pid
+
+#-------------------------------------------------------
+# Misc. tooling
+#-------------------------------------------------------
+coverage.xml
+# Mac/Linux backup files
+*~

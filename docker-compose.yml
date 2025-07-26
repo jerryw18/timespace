@@ -1,0 +1,36 @@
+version: "3.9"
+
+# Time Space – minimal stack (frontend + agent) with no database
+services:
+  frontend:
+    container_name: timespace_frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"           # Vite / Static site port
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - agent
+    networks:
+      - timespace_net
+
+  agent:
+    container_name: timespace_agent
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./agent:/app
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "8000:8000"
+    networks:
+      - timespace_net
+
+networks:
+  timespace_net:
+    driver: bridge
