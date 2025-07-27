@@ -44,14 +44,15 @@ app.add_middleware(
 # Initialize OpenAI client
 from openai import OpenAI
 
-# Direct OpenAI client setup
+# OpenAI client setup using environment variable
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    logger.error("OPENAI_API_KEY is required but not found!")
-    raise ValueError("Please set OPENAI_API_KEY environment variable")
-
-client = OpenAI(api_key=api_key)
-logger.info("OpenAI client initialized successfully")
+    logger.warning("⚠️  No OPENAI_API_KEY found! Set environment variable or create .env file")
+    logger.warning("🔑 Example: $env:OPENAI_API_KEY='your-api-key-here'")
+    client = None
+else:
+    client = OpenAI(api_key=api_key)
+    logger.info("✅ OpenAI client initialized successfully")
 
 # Global dictionary to store previous knowledge
 knowledge_dict = {}
@@ -82,6 +83,10 @@ class QueryRequest(BaseModel):
 # OpenAI Integration Functions
 def test_location(location: str) -> str:
     """Get historical events for a location using OpenAI"""
+    if not client:
+        logger.warning("🔒 OpenAI client not available - using mock response")
+        return get_mock_response(location)
+    
     try:
         context = []
         sys_prompt = f"""You are a fabulous historian. Given a location name from the user, return the 5 most significant dates and descriptions of what occurred on those dates in the following json format:
@@ -124,25 +129,39 @@ def test_location(location: str) -> str:
 
 def test_event(location: str, date: str) -> str:
     """Get detailed information about a specific event"""
+    if not client:
+        logger.warning("🔒 OpenAI client not available - using mock response")
+        return get_mock_drilldown_response(location, date)
+    
     try:
         context = []
         prev_knowledge = knowledge_dict.get(location, "No previous information available")
-        
-        sys_prompt = f"""You are a fabulous historian. You previously shared the following information on the location {location} with the user. Now the user is interested in getting more details on a specific event. Given the date of the event from the user, provide 5 additional details on that event in JSON format:
-        
+        print(prev_knowledge)
+        sys_prompt = f"""You are a fabulous historian. Given a location "{location}" and a specific date "{date}", provide detailed information about historical events that occurred in {location} around {date}. 
+
+        Return the response in this EXACT JSON format:
         {{"location": {{ "name": "{location}" }},
          "events": [
             {{
                 "date": "{date}",
-                "title": "Event Title",
-                "description": "Detailed description of the event.",
+                "title": "Specific Event Title",
+                "description": "Detailed description of what happened in {location} around {date}.",
                 "category": "political"
+            }},
+            {{
+                "date": "{date}",
+                "title": "Another Event Title", 
+                "description": "Another event that happened in {location} around {date}.",
+                "category": "economic"
             }}
          ]
         }}
+
+        Focus on events that actually happened in {location} around the year {date}. If you don't know specific events for that exact year, provide events from nearby years in {location}.
         
-        Previous information: {prev_knowledge}
-        Only return valid JSON, no additional text."""
+        Previous context: {prev_knowledge}
+        
+        IMPORTANT: Only return valid JSON in the exact format above, no additional text or explanations."""
         
         context.append({'role':'system', 'content': sys_prompt})
         context.append({'role':'user', 'content': date})
@@ -159,7 +178,8 @@ def test_event(location: str, date: str) -> str:
         )
         
         llm_response = response.choices[0].message.content
-        logger.info(f"LLM Event Response for {location} on {date}: {llm_response}")
+        logger.info(f"🤖 LLM Event Response for {location} on {date}: {llm_response}")
+        logger.info(f"📏 Response length: {len(llm_response)} characters")
         return llm_response
         
     except Exception as e:
@@ -168,6 +188,8 @@ def test_event(location: str, date: str) -> str:
         # Helper function to parse OpenAI response and convert to events
 def parse_openai_response(response_text: str, location: str) -> List[Dict[str, Any]]:
     """Parse OpenAI JSON response and convert to event format"""
+    logger.info(f"🔍 Raw OpenAI response to parse: {response_text[:500]}...")
+    
     try:
         # Clean up response text (remove potential markdown formatting)
         response_text = response_text.strip()
@@ -176,7 +198,10 @@ def parse_openai_response(response_text: str, location: str) -> List[Dict[str, A
         if response_text.endswith("```"):
             response_text = response_text[:-3]
         
+        logger.info(f"🧹 Cleaned response text: {response_text[:200]}...")
+        
         response_data = json.loads(response_text)
+        logger.info(f"📊 Parsed JSON data: {response_data}")
         
         # Simple coordinate mapping for common cities
         location_coords = {
@@ -192,6 +217,8 @@ def parse_openai_response(response_text: str, location: str) -> List[Dict[str, A
         
         default_coords = location_coords.get(location.lower())
         events = response_data.get("events", [])
+        logger.info(f"📋 Found {len(events)} events in response")
+        
         enhanced_events = []
         
         for i, event in enumerate(events):
@@ -204,14 +231,18 @@ def parse_openai_response(response_text: str, location: str) -> List[Dict[str, A
                 "coordinates": default_coords
             }
             enhanced_events.append(enhanced_event)
+            logger.info(f"✅ Enhanced event {i}: {event.get('title', 'No title')}")
         
+        logger.info(f"🎯 Returning {len(enhanced_events)} enhanced events")
         return enhanced_events
         
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse OpenAI response: {e}")
+        logger.error(f"❌ Failed to parse OpenAI response as JSON: {e}")
+        logger.error(f"📝 Response text was: {response_text}")
         return []
     except Exception as e:
-        logger.error(f"Error processing OpenAI response: {e}")
+        logger.error(f"❌ Error processing OpenAI response: {e}")
+        logger.error(f"📝 Response text was: {response_text}")
         return []
 
 # API Endpoints
@@ -284,12 +315,23 @@ async def drill_down(
     try:
         # Use the test_event function
         openai_response = test_event(location, date)
+        logger.info(f"OpenAI drilldown response: {openai_response}")
         
         if not openai_response:
-            raise HTTPException(status_code=500, detail="Failed to get response from OpenAI")
-        
-        # Parse the OpenAI response
-        events_data = parse_openai_response(openai_response, location)
+            logger.warning("No response from test_event, using fallback")
+            # Create a fallback response for drill-down
+            events_data = [{
+                "id": f"{location.lower().replace(' ', '_')}_drilldown_0_{date}",
+                "date": date,
+                "title": f"Details about {title}",
+                "description": f"More information about the event '{title}' that occurred in {location} on {date}. Set your OpenAI API key for detailed historical analysis.",
+                "category": "historical",
+                "coordinates": None
+            }]
+        else:
+            # Parse the OpenAI response
+            events_data = parse_openai_response(openai_response, location)
+            logger.info(f"Parsed events data: {events_data}")
         
         # Convert to Pydantic models
         events = []
@@ -298,7 +340,7 @@ async def drill_down(
             coordinates = Coordinates(**coords) if coords else None
             
             # Generate unique ID for sub-event
-            event_id = f"{location.lower().replace(' ', '_')}_sub_{i}_{event_data.get('date', date)}"
+            event_id = event_data.get("id", f"{location.lower().replace(' ', '_')}_sub_{i}_{event_data.get('date', date)}")
             
             event = Event(
                 id=event_id,
@@ -320,7 +362,20 @@ async def drill_down(
         
     except Exception as e:
         logger.error(f"Error processing drilldown for {title}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error during drilldown research")
+        # Return a fallback response instead of raising an error
+        fallback_event = Event(
+            id=f"{location.lower().replace(' ', '_')}_error_0_{date}",
+            date=date,
+            title=f"Event in {location}",
+            description=f"Unable to get detailed information about '{title}' in {location}. Please check server logs for details.",
+            category="historical",
+            coordinates=None
+        )
+        
+        return EventsResponse(
+            location=Location(name=location),
+            events=[fallback_event]
+        )
 
 # Legacy endpoint for backwards compatibility (from README.md)
 @app.post("/query", response_model=EventsResponse)
